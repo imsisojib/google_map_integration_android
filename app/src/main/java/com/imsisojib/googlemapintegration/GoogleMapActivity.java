@@ -292,6 +292,20 @@ public class GoogleMapActivity extends AppCompatActivity implements OnMapReadyCa
             }
         });
 
+        /**when Current-Location-Button clicked, remove suggestions and text from MaterialSearchBar*/
+        mMap.setOnMyLocationButtonClickListener(new GoogleMap.OnMyLocationButtonClickListener() {
+            @Override
+            public boolean onMyLocationButtonClick() {
+                if (materialSearchBar.isSuggestionsVisible()){
+                    materialSearchBar.clearSuggestions();
+                }
+                if (materialSearchBar.isSearchOpened()){
+                    materialSearchBar.closeSearch();
+                }
+                return false;
+            }
+        });
+
     }
 
     @Override
