@@ -135,7 +135,7 @@ public class GoogleMapActivity extends AppCompatActivity implements OnMapReadyCa
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 FindAutocompletePredictionsRequest predictionsRequest
                         = FindAutocompletePredictionsRequest.builder()
-                        .setCountry("BD") //only query in Bangladeshi's Places
+                         .setCountry("bd") //only query in Bangladeshi's Places
                         .setTypeFilter(TypeFilter.ADDRESS)
                         .setSessionToken(token)
                         .setQuery(s.toString())
