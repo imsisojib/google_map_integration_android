@@ -45,4 +45,10 @@ dependencies {
 
     implementation 'com.karumi:dexter:6.2.2'
 
+    //map sdk
+    implementation 'com.google.android.gms:play-services-maps:17.0.0'
+
+    //material search bar
+    implementation 'com.github.mancj:MaterialSearchBar:0.8.5'
+
 }
