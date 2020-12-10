@@ -7,46 +7,7 @@
     android:layout_height="match_parent"
     tools:context=".GoogleMapActivity">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:background="@android:color/transparent"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:theme="@style/AppTheme.AppBarOverlay">
-
-        <com.google.android.material.appbar.CollapsingToolbarLayout
-            app:contentScrim="?attr/colorPrimary"
-            android:layout_margin="16dp"
-            android:fitsSystemWindows="true"
-            app:layout_scrollFlags="enterAlways|scroll|exitUntilCollapsed"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize">
-
-            <com.mancj.materialsearchbar.MaterialSearchBar
-                style="@style/MaterialSearchBarLight"
-                android:background="@android:color/background_light"
-                app:mt_speechMode="false"
-                app:mt_hint="Custom hint"
-                app:mt_maxSuggestionsCount="10"
-                android:elevation="5dp"
-                android:outlineProvider="bounds"
-                app:mt_navIconEnabled="true"
-                app:mt_placeholder="Search a Location"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:id="@+id/searchBar" />
-
-        </com.google.android.material.appbar.CollapsingToolbarLayout>
-
-    </com.google.android.material.appbar.AppBarLayout>
-
     <include layout="@layout/content_google_map" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/fab_margin"
-        app:srcCompat="@android:drawable/ic_dialog_email" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
