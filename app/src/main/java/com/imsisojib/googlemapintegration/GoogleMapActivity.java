@@ -22,6 +22,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.tasks.CancellationToken;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -29,6 +30,11 @@ import com.google.android.gms.tasks.Task;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.AutocompletePrediction;
 import com.google.android.libraries.places.api.model.AutocompleteSessionToken;
+import com.google.android.libraries.places.api.model.LocationBias;
+import com.google.android.libraries.places.api.model.LocationRestriction;
+import com.google.android.libraries.places.api.model.TypeFilter;
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest;
+import com.google.android.libraries.places.api.net.FindAutocompletePredictionsResponse;
 import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
@@ -40,11 +46,15 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class GoogleMapActivity extends AppCompatActivity implements OnMapReadyCallback {
@@ -75,11 +85,87 @@ public class GoogleMapActivity extends AppCompatActivity implements OnMapReadyCa
         mapView = mapFragment.getView();
 
         mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(GoogleMapActivity.this);
+
+        /**Places API works on this Variables*/
         Places.initialize(GoogleMapActivity.this, "AIzaSyCDhDiD1nJjU-bGEZOGYfvA8Uzfno9B1gU");
         placesClient = Places.createClient(this);
-
         AutocompleteSessionToken token = AutocompleteSessionToken.newInstance();
 
+        //material searchbar'r action handling
+        materialSearchBar.setOnSearchActionListener(new MaterialSearchBar.OnSearchActionListener() {
+            @Override
+            public void onSearchStateChanged(boolean enabled) {
+
+            }
+
+            @Override
+            public void onSearchConfirmed(CharSequence text) {
+                startSearch(text.toString(),true,null,true);
+            }
+
+            @Override
+            public void onButtonClicked(int buttonCode) {
+                /**menu item button and back button click'r kaj ekhane hobe.*/
+                if (buttonCode == MaterialSearchBar.BUTTON_NAVIGATION){
+                    //navigation button
+                    /**Navigation can be open or close here.*/
+                }else if (buttonCode == MaterialSearchBar.BUTTON_BACK){
+                    //back button click
+                    materialSearchBar.closeSearch();
+                }
+            }
+        });
+
+        /**materialSearchBar'r TextChangeListener'r sathe places api integrate korte hobe*/
+        materialSearchBar.addTextChangeListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                FindAutocompletePredictionsRequest predictionsRequest
+                        = FindAutocompletePredictionsRequest.builder()
+                        .setCountry("bn") //only query in Bangladeshi's Places
+                        .setTypeFilter(TypeFilter.ADDRESS)
+                        .setSessionToken(token)
+                        .setQuery(s.toString())
+                        .build();
+                placesClient.findAutocompletePredictions(predictionsRequest)
+                        .addOnCompleteListener(new OnCompleteListener<FindAutocompletePredictionsResponse>() {
+                            @Override
+                            public void onComplete(@NonNull Task<FindAutocompletePredictionsResponse> task) {
+                                if (task.isSuccessful()){
+                                    FindAutocompletePredictionsResponse predictionsResponse =
+                                            task.getResult();
+                                    if (predictionsResponse!=null){
+                                        predictionList = predictionsResponse.getAutocompletePredictions();
+
+                                        //convert predictList to List<String> for built in adapter in MaterialSearchBar
+                                        List<String> suggestionsList = new ArrayList<>();
+                                        for (int i=0; i<predictionList.size(); i++){
+                                            AutocompletePrediction prediction = predictionList.get(i);
+                                            suggestionsList.add(prediction.getFullText(null).toString());
+                                        }
+                                        materialSearchBar.updateLastSuggestions(suggestionsList);
+                                        //check if suggestions list is visible to materialserachbar
+                                        if (!materialSearchBar.isSuggestionsVisible()){
+                                            materialSearchBar.showSuggestionsList();
+                                        }
+                                    }
+                                }else{
+                                    Log.d("ERROR", "prediction request task unsuccessful.");
+                                }
+                            }
+                        });
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
+        });
     }
 
     @Override
