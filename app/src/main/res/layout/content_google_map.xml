@@ -17,7 +17,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:mt_hint="Custom hint"
+        app:mt_hint="Type Location Name"
         app:mt_maxSuggestionsCount="10"
         app:mt_navIconEnabled="true"
         app:mt_placeholder="Search a Location"

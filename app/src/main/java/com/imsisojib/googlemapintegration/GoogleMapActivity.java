@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Bundle;
 
+import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationAvailability;
@@ -32,13 +33,17 @@ import com.google.android.libraries.places.api.model.AutocompletePrediction;
 import com.google.android.libraries.places.api.model.AutocompleteSessionToken;
 import com.google.android.libraries.places.api.model.LocationBias;
 import com.google.android.libraries.places.api.model.LocationRestriction;
+import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.api.model.TypeFilter;
+import com.google.android.libraries.places.api.net.FetchPlaceRequest;
+import com.google.android.libraries.places.api.net.FetchPlaceResponse;
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsRequest;
 import com.google.android.libraries.places.api.net.FindAutocompletePredictionsResponse;
 import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.mancj.materialsearchbar.MaterialSearchBar;
+import com.mancj.materialsearchbar.adapter.SuggestionsAdapter;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -46,15 +51,18 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 
+import android.os.Handler;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class GoogleMapActivity extends AppCompatActivity implements OnMapReadyCallback {
@@ -127,7 +135,7 @@ public class GoogleMapActivity extends AppCompatActivity implements OnMapReadyCa
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 FindAutocompletePredictionsRequest predictionsRequest
                         = FindAutocompletePredictionsRequest.builder()
-                        .setCountry("bn") //only query in Bangladeshi's Places
+                        .setCountry("BD") //only query in Bangladeshi's Places
                         .setTypeFilter(TypeFilter.ADDRESS)
                         .setSessionToken(token)
                         .setQuery(s.toString())
@@ -148,6 +156,7 @@ public class GoogleMapActivity extends AppCompatActivity implements OnMapReadyCa
                                             AutocompletePrediction prediction = predictionList.get(i);
                                             suggestionsList.add(prediction.getFullText(null).toString());
                                         }
+                                        Log.d("ERROR", "onFindSuggestionComplete: size-"+suggestionsList.size());
                                         materialSearchBar.updateLastSuggestions(suggestionsList);
                                         //check if suggestions list is visible to materialserachbar
                                         if (!materialSearchBar.isSuggestionsVisible()){
@@ -163,6 +172,68 @@ public class GoogleMapActivity extends AppCompatActivity implements OnMapReadyCa
 
             @Override
             public void afterTextChanged(Editable s) {
+
+            }
+        });
+
+        /**OnSuggestions click in MaterialSearchBar*/
+        materialSearchBar.setSuggestionsClickListener(new SuggestionsAdapter.OnItemViewClickListener() {
+            @Override
+            public void OnItemClickListener(int position, View v) {
+                //code goes here
+                /**Mehod: when suggestions is clicked, get coordinate of that place and move camera to that particular position*/
+                if (position >= predictionList.size()) return;
+                AutocompletePrediction selectedPrediction = predictionList.get(position);
+                String suggestion = materialSearchBar.getLastSuggestions().get(position).toString();
+                materialSearchBar.setText(suggestion);
+
+                //clear suggestions delay
+                new Handler().postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        materialSearchBar.clearSuggestions();
+                    }
+                },1000);
+
+                //close soft-keyboard
+                InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
+                if (imm!=null){
+                    imm.hideSoftInputFromWindow(materialSearchBar.getWindowToken(),InputMethodManager.HIDE_IMPLICIT_ONLY);
+                }
+
+                String placeId = selectedPrediction.getPlaceId();
+                List<Place.Field> placeFields = Arrays.asList(Place.Field.LAT_LNG);
+
+                FetchPlaceRequest fetchPlaceRequest = FetchPlaceRequest.builder(placeId,placeFields).build();
+                placesClient.fetchPlace(fetchPlaceRequest)
+                        .addOnSuccessListener(new OnSuccessListener<FetchPlaceResponse>() {
+                            @Override
+                            public void onSuccess(FetchPlaceResponse fetchPlaceResponse) {
+                                Place place = fetchPlaceResponse.getPlace();
+                                Log.d("ERROR", "fetchPlaceRequest(): place is found.");
+                                LatLng latLngOfPlace = place.getLatLng();
+                                if (latLngOfPlace!=null){
+                                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLngOfPlace,DEFAULT_ZOOM));
+                                }
+                            }
+                        }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        if (e instanceof ApiException){
+                            ApiException apiException = (ApiException) e;
+                            apiException.printStackTrace();
+                            int statusCode = apiException.getStatusCode();
+                            Log.d("ERROR", "fetchPlaceRequest(): place not found.");
+                            Log.d("ERROR", "fetchPlaceRequest(): statusCode: "+statusCode);
+
+                        }
+                    }
+                });
+
+            }
+
+            @Override
+            public void OnItemDeleteListener(int position, View v) {
 
             }
         });
